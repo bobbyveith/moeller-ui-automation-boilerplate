@@ -1,22 +1,21 @@
 import os
 import csv
 from typing import Dict, Any, List
+import pandas as pd
 
-def load_product_data() -> Dict[str, Dict[str, str]]:
+
+def load_product_data() -> pd.DataFrame:
     # Use relative path to locate the CSV file
-    product_data_path = os.path.join(os.path.dirname(__file__), "PRODUCT_DATA.csv")
-    
-    # Create a hashmap to store the product data
-    product_data: Dict[str, Dict[str, str]] = {}
-    
-    # Read the CSV file and populate the hashmap
-    with open(product_data_path, 'r') as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            sku = row.pop('sku')  # Remove 'sku' from row and use it as the key
-            product_data[sku] = row
-    
-    return product_data
+    product_data_path = os.path.join(os.path.dirname(__file__), "./PRODUCT_DATA.csv")
+
+    # Read the CSV file into a pandas DataFrame
+    df = pd.read_csv(product_data_path)
+
+    # Make the sku column the index
+    df.set_index('sku', inplace=True)
+
+    return df
+
 
 def get_product_info(product_sku: str, product_data: Dict[str, Dict[str, str]]):
     # Search for the product_sku in the hashmap
@@ -35,8 +34,15 @@ def get_product_info(product_sku: str, product_data: Dict[str, Dict[str, str]]):
     else:
         return None, None, None, None, None, None, None, None  # Return None values if SKU not found
 
-def create_url(product_sku):
-    catalog_id, list_id, item_id, *_ = get_product_info(product_sku, load_product_data())
 
-    url = f"https://www.myorderdesk.com/FormV2.asp?Provider_ID=1325030&OrderFormID=534080&CatalogID={catalog_id}&INVSYN={list_id}|{item_id}"
-    return url
+def create_url(product_sku):
+    product_data = load_product_data()
+    if product_sku in product_data.index:
+        product_info = product_data.loc[product_sku]
+        catalog_id = product_info['catalog_id']
+        list_id = product_info['list_id']
+        item_id = product_info['item_id']
+        url = f"https://www.myorderdesk.com/FormV2.asp?Provider_ID=1325030&OrderFormID=534080&CatalogID={catalog_id}&INVSYN={list_id}|{item_id}"
+        return url
+    else:
+        return None
