@@ -129,6 +129,18 @@ def csv_to_json_payload(csv_path: str) -> str:
 
 
 if __name__ == "__main__":
+    # json_payload = '''
+    # {
+    #     "order": [
+    #         {"sku": "912PR243F172", "quantity": 2},
+    #         {"sku": "912PR101F172", "quantity": 1},
+    #         {"sku": "1212FVRPWAS", "quantity": 1},
+    #         {"sku": "1218CF04F3", "quantity": 1},
+    #         {"sku": "1218CF05F3", "quantity": 1}
+    #     ],
+    #     "purchase_order_number": "test!123test"
+    # }
+    # '''
     input_csv = input("Enter the CSV path: ")
     
     # Transform CSV to JSON payload
