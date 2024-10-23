@@ -90,38 +90,6 @@ def main(json_payload: str):
 
 
 if __name__ == "__main__":
-    # Example JSON payload
-    # 1. Group by size DONE
-    # 2. Iterate over each sizer group until the end of the process of adding items to the cart
-    # Before clicking on the checkout button, on the cart page, make a check to see if all the items from the payload are in the cart
-    # If not, make while loop that will retry those items that are not in the cart and redo the process of checking them in the cart -> If the retry count is > 3, just continue with the flow and save that missing items in a list, so we can report it to the user.
-    # If yes, continue with the flow DONE
-    # checkout id ->  DONE
-    # Purchase Order Number XPATH -> //*[@id="paymentCustom5982_1"] DONE
-    # PX Priority -> JS dropdown menu with XPATH -> //*[@id="paymentCustom5982_2"]/option[2] DONE
-    # I acknowledge and agree -> Same dropdown menu with XPATH -> //*[@id="paymentCustom5982_5"]/option[2] DONE
-    # Place order button Id -> checkout-2 DONE
-    # On the order confirmation page, get the confirmation number and save the pdf (prob at an S3 bucket) DONE
-    # Confirmation number its the only div strong inside the section with id OrderMeta DONE
-    # 3. Once the request is complete, get the confirmation number and save the pdf (prob at an S3 bucket)
-    # 4. RETURNING RESPONSE JSON
-    # response = {
-    #     status_code: 200
-    #     sizes: {
-    #         "1": {
-    #             "job_number": "123456",
-    #             "pdf": "base64 encoded pdf",
-    #             "errors": {
-    #                 "sku_number_1": "error message",
-    #                 "sku_number_2": "error message"
-    #             }
-    #         },
-    #         "2": {
-    #             "job_number": "123456",
-    #             "pdf": "base64 encoded pdf"
-    #         },
-    #     }
-    # }
     json_payload = '''
     {
         "order": [
@@ -134,4 +102,4 @@ if __name__ == "__main__":
     }
     '''
     return_response = main(json_payload)
-    # print(json.dumps(return_response, indent=2))
+    print(json.dumps(return_response, indent=2))
