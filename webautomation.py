@@ -18,22 +18,29 @@ from selenium.webdriver.support.ui import Select
 
 
 class WebAutomation:
-    def __init__(self, base_url, username, password, automation_response):
+    def __init__(self, base_url, username, password, automation_response, purchase_order_number):
         self.base_url = base_url
         self.username = username
         self.password = password
         self.automation_response = automation_response
+        self.purchase_order_number = purchase_order_number
         self.driver = None
         self.logger = logging.getLogger(__name__)
-        self.setup_logging()
+        self.setup_logging(purchase_order_number)
 
-    def setup_logging(self):
+    def setup_logging(self, purchase_order_number):
         """
         Setup the logging for the web automation
         """
+        # Make sure the logs directory exists
+        if not os.path.exists("./logs"):
+            os.makedirs("./logs")
+
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            filename=f"./logs/{purchase_order_number}-{datetime.now().strftime('%m-%d-%Y')}.log",
+            filemode="w"
         )
 
     def initialize_driver(self):
@@ -44,6 +51,10 @@ class WebAutomation:
             service = Service(ChromeDriverManager().install())
             chrome_options = Options()
 
+            # Make sure the job_confirmations directory exists
+            if not os.path.exists("./job_confirmations"):
+                os.makedirs("./job_confirmations")
+
             prefs = {
                 "download.default_directory": os.path.abspath("./job_confirmations/"),
                 "download.prompt_for_download": False,
@@ -51,7 +62,7 @@ class WebAutomation:
                 "safebrowsing.enabled": False
             }
             chrome_options.add_experimental_option('prefs', prefs)
-            chrome_options.add_argument("--headless=new")
+            # chrome_options.add_argument("--headless=new") # Comment this out if you want to see the browser
             chrome_options.add_argument("--kiosk")
             chrome_options.add_argument("--kiosk-printing")
             chrome_options.add_argument("--no-sandbox")
@@ -147,14 +158,15 @@ class WebAutomation:
             # Decode the PDF base64 and save the file
             pdf_data = base64.b64decode(pdf['data'])
 
-            # Rename the downloaded file
-            new_file_path = f"./job_confirmations/{order_confirmation_number}.pdf"
+            # Rename the downloaded file TODO: CHANGE THIS IMPLEMENTATION TO S3 BUCKET
+            new_file_path = f"./job_confirmations/{self.purchase_order_number}-{order_confirmation_number}.pdf"
             with open(new_file_path, 'wb') as f:
                 f.write(pdf_data)
 
             self.logger.info(f"[+] PDF downloaded and renamed successfully to {order_confirmation_number}.pdf")
+            time.sleep(3)
 
-            return new_file_path
+            return new_file_path, order_confirmation_number
 
         except Exception as e:
             self.logger.error(f"[-] Error downloading PDF: {e}")
@@ -297,14 +309,11 @@ class WebAutomation:
             checkout_button.click()
             time.sleep(3)
 
-            # Select requested by date
-            self.select_next_available_date()
-
             # Input Purchase Order Number
             purchase_order_number = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.ID, 'paymentCustom5982_1'))
             )
-            purchase_order_number.send_keys("test!123test")
+            purchase_order_number.send_keys(self.purchase_order_number)
 
             # Select PX Priority (ASAP)
             px_priority_select = Select(self.driver.find_element(By.ID, "paymentCustom5982_2"))
@@ -314,22 +323,25 @@ class WebAutomation:
             acknowledge_select = Select(self.driver.find_element(By.ID, "paymentCustom5982_5"))
             acknowledge_select.select_by_visible_text("to the terms shown in the PX catalog welcome page and the policies linked at the bottom of the site.")
 
-            # time.sleep(100)
+            # Select requested by date
+            self.select_next_available_date()
+
+            time.sleep(3)
             # Click the Place Order button
-            # place_order_button = WebDriverWait(self.driver, 10).until(
-            #     EC.element_to_be_clickable((By.ID, 'checkout-2'))
-            # )
-            # place_order_button.click()
-            # time.sleep(3)
+            place_order_button = WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.ID, 'checkout-2'))
+            )
+            place_order_button.click()
+            time.sleep(3)
 
-            # # Wait for the order confirmation page
-            # WebDriverWait(self.driver, 20).until(
-            #     EC.presence_of_element_located((By.ID, "OrderMeta"))
-            # )
+            # Wait for the order confirmation page
+            WebDriverWait(self.driver, 20).until(
+                EC.presence_of_element_located((By.ID, "OrderMeta"))
+            )
 
-            # order_confirmation_number = self.order_confirmation_page()
-            order_confirmation_number = "1234567890"
-            return order_confirmation_number
+            pdf_file_path, order_confirmation_number = self.order_confirmation_page()
+            # order_confirmation_number = "1234567890"
+            return pdf_file_path, order_confirmation_number
         except Exception as e:
             self.logger.error(f"[-] Error checking out: {e}")
             raise
@@ -360,13 +372,12 @@ class WebAutomation:
                     for item in missing_or_incorrect_items:
                         self.automation_response["sizes"][order_group.size_group]["errors"][item.sku] = "Failed to add to cart or incorrect quantity"
 
-                order_confirmation_number = self.checkout()
-                if order_confirmation_number:
+                pdf_file_path, order_confirmation_number = self.checkout()
+                if order_confirmation_number and pdf_file_path:
                     self.automation_response["sizes"][order_group.size_group]["job_number"] = order_confirmation_number
-                    # pdf_data = self.order_confirmation_page()
-                    # if pdf_data:
-                    #     self.automation_response["sizes"][order_group.size_group]["pdf"] = pdf_data
-                        # TODO: Implement S3 bucket storage for PDF      
+                    self.automation_response["sizes"][order_group.size_group]["pdf"] = pdf_file_path
+                    # TODO: Implement S3 bucket storage for PDF      
+
                 break
 
             self.automation_response["status_code"] = 200

@@ -21,7 +21,7 @@ from models import Payload, OrderGroup
 from utils import create_url, load_product_data
 from typing import List
 from dotenv import load_dotenv
-import pandas as pd
+import pyfiglet
 import logging
 import traceback
 import json
@@ -55,8 +55,15 @@ def populate_automation_response(
         }
 
 
+def print_banner():
+    print(pyfiglet.figlet_format("MoellerMatic"))
+
+
 def main(json_payload: str):
     try:
+        # Print automation name
+        print_banner()
+
         # Load product data
         product_data = load_product_data()
 
@@ -78,7 +85,8 @@ def main(json_payload: str):
         USERNAME = os.getenv("USERNAME")
         PASSWORD = os.getenv("PASSWORD")
 
-        automation = WebAutomation(BASE_URL, USERNAME, PASSWORD, automation_response)
+        purchase_order_number = json.loads(json_payload)['purchase_order_number']
+        automation = WebAutomation(BASE_URL, USERNAME, PASSWORD, automation_response, purchase_order_number)
         # Run the automation
         automation_response = automation.run(order_groups)
 
@@ -98,7 +106,8 @@ if __name__ == "__main__":
             {"sku": "1212FVRPWAS", "quantity": 1},
             {"sku": "1218CF04F3", "quantity": 1},
             {"sku": "1218CF05F3", "quantity": 1}
-        ]
+        ],
+        "purchase_order_number": "test!123test"
     }
     '''
     return_response = main(json_payload)
