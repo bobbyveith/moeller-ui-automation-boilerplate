@@ -5,6 +5,7 @@ import base64
 from models import OrderGroup, OrderItem
 from typing import List
 from datetime import datetime, timedelta
+from config import TEST_MODE
 
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium import webdriver
@@ -327,20 +328,25 @@ class WebAutomation:
             self.select_next_available_date()
 
             time.sleep(3)
-            # Click the Place Order button
-            place_order_button = WebDriverWait(self.driver, 10).until(
+
+            if not TEST_MODE:
+                # Click the Place Order button
+                place_order_button = WebDriverWait(self.driver, 10).until(
                 EC.element_to_be_clickable((By.ID, 'checkout-2'))
-            )
-            place_order_button.click()
-            time.sleep(3)
+                )
+                place_order_button.click()
+                time.sleep(3)
 
-            # Wait for the order confirmation page
-            WebDriverWait(self.driver, 20).until(
-                EC.presence_of_element_located((By.ID, "OrderMeta"))
-            )
+                # Wait for the order confirmation page
+                WebDriverWait(self.driver, 20).until(
+                    EC.presence_of_element_located((By.ID, "OrderMeta"))
+                )
 
-            pdf_file_path, order_confirmation_number = self.order_confirmation_page()
-            # order_confirmation_number = "1234567890"
+                pdf_file_path, order_confirmation_number = self.order_confirmation_page()
+            else:
+                order_confirmation_number = "1234567890"
+                pdf_file_path = f"{self.purchase_order_number}.pdf"
+
             return pdf_file_path, order_confirmation_number
         except Exception as e:
             self.logger.error(f"[-] Error checking out: {e}")
@@ -378,7 +384,7 @@ class WebAutomation:
                     self.automation_response["sizes"][order_group.size_group]["pdf"] = pdf_file_path
                     # TODO: Implement S3 bucket storage for PDF      
 
-                break
+                #break
 
             self.automation_response["status_code"] = 200
             return self.automation_response
