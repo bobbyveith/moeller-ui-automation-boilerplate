@@ -51,7 +51,7 @@ class WebAutomation:
                 "safebrowsing.enabled": False
             }
             chrome_options.add_experimental_option('prefs', prefs)
-            # chrome_options.add_argument("--headless=new")
+            chrome_options.add_argument("--headless=new")
             chrome_options.add_argument("--kiosk")
             chrome_options.add_argument("--kiosk-printing")
             chrome_options.add_argument("--no-sandbox")
@@ -206,7 +206,7 @@ class WebAutomation:
     def select_next_available_date(self):
         """
         Select the next available date from the calendar
-        based on the current date (tomorrow) and the current time.
+        based on the current date (tomorrow) and the current time in UTC.
         """
         try:
             # Click on the date input to open the calendar
@@ -220,13 +220,16 @@ class WebAutomation:
                 EC.presence_of_element_located((By.CLASS_NAME, "datepicker-days"))
             )
 
-            day_tomorrow = (datetime.now() + timedelta(days=1)).strftime("%d")
-            month_tomorrow = (datetime.now() + timedelta(days=1)).strftime("%B")
-            # Find all day elements
-            self.driver.find_element(By.XPATH, f"//table[@class='table-condensed']//td[contains(@class, 'day') and not(contains(@class, 'disabled')) and text()='{day_tomorrow}']").click()
+            # Calculate tomorrow's date in UTC
+            tomorrow_utc = (datetime.utcnow() + timedelta(days=1))
+            day_tomorrow = tomorrow_utc.strftime("%d")
+            month_tomorrow = tomorrow_utc.strftime("%B")
+
+            # Find and click on tomorrow's date
+            next_day = self.driver.find_element(By.XPATH, f"//table[@class='table-condensed']//td[contains(@class, 'day') and not(contains(@class, 'disabled')) and text()='{day_tomorrow}']")
+            next_day.click()
 
             self.logger.info(f"[+] Selected the next available date: {day_tomorrow} of {month_tomorrow}")
-
         except Exception as e:
             self.logger.error(f"Error selecting the next available date: {e}")
             raise
@@ -311,21 +314,21 @@ class WebAutomation:
             acknowledge_select = Select(self.driver.find_element(By.ID, "paymentCustom5982_5"))
             acknowledge_select.select_by_visible_text("to the terms shown in the PX catalog welcome page and the policies linked at the bottom of the site.")
 
-            # time.sleep(20)
+            # time.sleep(100)
             # Click the Place Order button
-            place_order_button = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.ID, 'checkout-2'))
-            )
-            place_order_button.click()
-            time.sleep(3)
+            # place_order_button = WebDriverWait(self.driver, 10).until(
+            #     EC.element_to_be_clickable((By.ID, 'checkout-2'))
+            # )
+            # place_order_button.click()
+            # time.sleep(3)
 
-            # Wait for the order confirmation page
-            WebDriverWait(self.driver, 20).until(
-                EC.presence_of_element_located((By.ID, "OrderMeta"))
-            )
+            # # Wait for the order confirmation page
+            # WebDriverWait(self.driver, 20).until(
+            #     EC.presence_of_element_located((By.ID, "OrderMeta"))
+            # )
 
-            order_confirmation_number = self.order_confirmation_page()
-            # order_confirmation_number = "1234567890"
+            # order_confirmation_number = self.order_confirmation_page()
+            order_confirmation_number = "1234567890"
             return order_confirmation_number
         except Exception as e:
             self.logger.error(f"[-] Error checking out: {e}")
@@ -360,12 +363,14 @@ class WebAutomation:
                 order_confirmation_number = self.checkout()
                 if order_confirmation_number:
                     self.automation_response["sizes"][order_group.size_group]["job_number"] = order_confirmation_number
-                    pdf_data = self.order_confirmation_page()
-                    if pdf_data:
-                        self.automation_response["sizes"][order_group.size_group]["pdf"] = pdf_data
-                        # TODO: Implement S3 bucket storage for PDF
+                    # pdf_data = self.order_confirmation_page()
+                    # if pdf_data:
+                    #     self.automation_response["sizes"][order_group.size_group]["pdf"] = pdf_data
+                        # TODO: Implement S3 bucket storage for PDF      
+                break
 
             self.automation_response["status_code"] = 200
+            return self.automation_response
         except Exception as e:
             self.logger.error(f"An error occurred during automation: {e}")
             self.automation_response["status_code"] = 500
@@ -373,4 +378,5 @@ class WebAutomation:
         finally:
             if self.driver:
                 self.driver.quit()
-        return self.automation_response
+
+
