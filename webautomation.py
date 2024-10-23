@@ -188,26 +188,20 @@ class WebAutomation:
 
         return missing_or_incorrect_items
 
-    def retry_add_to_cart(self, missing_items: List[OrderItem], max_retries=3):
+    def retry_add_to_cart(self, missing_items: List[OrderItem]):
         """
         Retry to add the missing items to the cart
 
         :param missing_items: The list of missing items
-        :param max_retries: The maximum number of retries
-        :return: The list of missing items
+        :return: The list of remaining missing items
         """
-        for retry in range(max_retries):
-            for item in missing_items:
-                try:
-                    self.add_to_cart(item)
-                except Exception as e:
-                    self.logger.warning(f"Failed to add {item.sku} to cart on retry {retry + 1}: {e}")
+        for item in missing_items:
+            try:
+                self.add_to_cart(item)
+            except Exception as e:
+                self.logger.warning(f"Failed to add {item.sku} to cart: {e}")
 
-            missing_items = self.check_cart_items(OrderGroup(size_group="retry", items=missing_items))
-            if not missing_items:
-                break
-
-        return missing_items
+        return self.check_cart_items(OrderGroup(size_group="retry", items=missing_items))
 
     def select_next_available_date(self):
         """
@@ -351,21 +345,32 @@ class WebAutomation:
                 self.clear_cart()
                 self.process_order_group(order_group)
 
-                missing_or_incorrect_items = self.check_cart_items(order_group)
-                if missing_or_incorrect_items:
-                    missing_or_incorrect_items = self.retry_add_to_cart(missing_or_incorrect_items)
-                    if missing_or_incorrect_items:
-                        for item in missing_or_incorrect_items:
-                            self.automation_response["sizes"][order_group.size_group]["errors"][item.sku] = "Failed to add to cart or incorrect quantity"
+                retry_count = 0
+                while retry_count < 3:
+                    missing_or_incorrect_items = self.check_cart_items(order_group)
+                    if not missing_or_incorrect_items:
+                        break
+                    self.retry_add_to_cart(missing_or_incorrect_items)
+                    retry_count += 1
 
-                # Proceed with checkout for this order group
+                if missing_or_incorrect_items:
+                    for item in missing_or_incorrect_items:
+                        self.automation_response["sizes"][order_group.size_group]["errors"][item.sku] = "Failed to add to cart or incorrect quantity"
+
                 order_confirmation_number = self.checkout()
                 if order_confirmation_number:
                     self.automation_response["sizes"][order_group.size_group]["job_number"] = order_confirmation_number
                     pdf_data = self.order_confirmation_page()
                     if pdf_data:
                         self.automation_response["sizes"][order_group.size_group]["pdf"] = pdf_data
-                    # TODO: Add pdf logic here (S3 Bucket) change from local to S3
+                        # TODO: Implement S3 bucket storage for PDF
 
+            self.automation_response["status_code"] = 200
         except Exception as e:
             self.logger.error(f"An error occurred during automation: {e}")
+            self.automation_response["status_code"] = 500
+            self.automation_response["error"] = str(e)
+        finally:
+            if self.driver:
+                self.driver.quit()
+        return self.automation_response

@@ -80,7 +80,7 @@ def main(json_payload: str):
 
         automation = WebAutomation(BASE_URL, USERNAME, PASSWORD, automation_response)
         # Run the automation
-        automation.run(order_groups)
+        automation_response = automation.run(order_groups)
 
         return automation_response
     except Exception as e:
