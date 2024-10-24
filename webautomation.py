@@ -233,12 +233,15 @@ class WebAutomation:
                 EC.presence_of_element_located((By.CLASS_NAME, "datepicker-days"))
             )
 
-            # Calculate tomorrow's date in UTC
-            tomorrow_utc = (datetime.utcnow() + timedelta(days=1))
+            # Calculate the next available business day in UTC
+            tomorrow_utc = datetime.utcnow() + timedelta(days=1)
+            while tomorrow_utc.weekday() >= 5:  # 5 = Saturday, 6 = Sunday, 0 = Monday
+                tomorrow_utc += timedelta(days=1)
+
             day_tomorrow = tomorrow_utc.strftime("%d")
             month_tomorrow = tomorrow_utc.strftime("%B")
 
-            # Find and click on tomorrow's date
+            # Find and click on the next available business day
             next_day = self.driver.find_element(By.XPATH, f"//table[@class='table-condensed']//td[contains(@class, 'day') and not(contains(@class, 'disabled')) and text()='{day_tomorrow}']")
             next_day.click()
 
@@ -363,28 +366,33 @@ class WebAutomation:
             self.login()
 
             for order_group in order_groups:
-                self.clear_cart()
-                self.process_order_group(order_group)
+                try:
+                    self.clear_cart()
+                    self.process_order_group(order_group)
 
-                retry_count = 0
-                while retry_count < 3:
-                    missing_or_incorrect_items = self.check_cart_items(order_group)
-                    if not missing_or_incorrect_items:
-                        break
-                    self.retry_add_to_cart(missing_or_incorrect_items)
-                    retry_count += 1
+                    retry_count = 0
+                    while retry_count < 3:
+                        missing_or_incorrect_items = self.check_cart_items(order_group)
+                        if not missing_or_incorrect_items:
+                            break
+                        self.retry_add_to_cart(missing_or_incorrect_items)
+                        retry_count += 1
 
-                if missing_or_incorrect_items:
-                    for item in missing_or_incorrect_items:
-                        self.automation_response["sizes"][order_group.size_group]["errors"][item.sku] = "Failed to add to cart or incorrect quantity"
+                    if missing_or_incorrect_items:
+                        for item in missing_or_incorrect_items:
+                            self.automation_response["sizes"][order_group.size_group]["errors"][item.sku] = "Failed to add to cart or incorrect quantity"
 
-                pdf_file_path, order_confirmation_number = self.checkout()
-                if order_confirmation_number and pdf_file_path:
-                    self.automation_response["sizes"][order_group.size_group]["job_number"] = order_confirmation_number
-                    self.automation_response["sizes"][order_group.size_group]["pdf"] = pdf_file_path
-                    # TODO: Implement S3 bucket storage for PDF      
+                    pdf_file_path, order_confirmation_number = self.checkout()
+                    if order_confirmation_number and pdf_file_path:
+                        self.automation_response["sizes"][order_group.size_group]["job_number"] = order_confirmation_number
+                        self.automation_response["sizes"][order_group.size_group]["pdf"] = pdf_file_path
+                        # TODO: Implement S3 bucket storage for PDF      
 
-                #break
+                    #break
+                except Exception as e:
+                    self.logger.error(f"Error processing order group {order_group.size_group}: {e}")
+                    self.automation_response["sizes"][order_group.size_group]["errors"]["group_error"] = str(e)
+                    continue
 
             self.automation_response["status_code"] = 200
             return self.automation_response
@@ -395,5 +403,6 @@ class WebAutomation:
         finally:
             if self.driver:
                 self.driver.quit()
+            return self.automation_response
 
 

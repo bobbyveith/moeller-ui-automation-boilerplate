@@ -25,8 +25,6 @@ import pyfiglet
 import logging
 import traceback
 import json
-import csv
-from pathlib import Path
 
 # Setup logging and load environment variables
 load_dotenv()
@@ -70,8 +68,7 @@ def main(json_payload: str):
         product_data = load_product_data()
 
         # Create Payload object from JSON
-        payload = Payload.from_json(json_payload, product_data, create_url)
-        print(payload)
+        payload, errors = Payload.from_json(json_payload, product_data, create_url)
 
         # Create order groups
         order_groups = create_order_groups(payload)
@@ -79,7 +76,8 @@ def main(json_payload: str):
         # Populate the automation_response with the order groups
         automation_response = {
             "status_code": 200,
-            "sizes": {}  # key is the size, value is a dict with job_number, pdf, errors
+            "sizes": {},  # key is the size, value is a dict with job_number, pdf, errors
+            "errors": errors
         }
         populate_automation_response(automation_response, order_groups)
 
@@ -97,55 +95,26 @@ def main(json_payload: str):
     except Exception as e:
         traceback.print_exc()
         logging.error(f"An error occurred in the main function: {e}")
-        return {"status_code": 500, "critical_error": str(e)}
-
-
-def csv_to_json_payload(csv_path: str) -> str:
-    """
-    Reads a CSV file and transforms it into a JSON payload string.
-    
-    :param csv_path: Path to the CSV file
-    :return: JSON payload as a string
-    """
-    order_items = []
-    csv_file = Path(csv_path)
-    
-    with csv_file.open('r') as file:
-        csv_reader = csv.reader(file)
-        for row in csv_reader:
-            sku = row[0]
-            quantity = row[1]
-            order_items.append({
-                "sku": sku,
-                "quantity": int(quantity)
-            })
-
-    payload = {
-        "order": order_items,
-        "purchase_order_number": csv_file.stem  # Use filename without extension as purchase_order_number
-    }
-    
-    return json.dumps(payload, indent=4)  # Convert the dictionary to a formatted JSON string
+        return {
+            "status_code": 500,
+            "critical_error": str(e),
+            "sizes": automation_response.get("sizes", {}),
+            "errors": automation_response.get("errors", {})
+        }
 
 
 if __name__ == "__main__":
-    # json_payload = '''
-    # {
-    #     "order": [
-    #         {"sku": "912PR243F172", "quantity": 2},
-    #         {"sku": "912PR101F172", "quantity": 1},
-    #         {"sku": "1212FVRPWAS", "quantity": 1},
-    #         {"sku": "1218CF04F3", "quantity": 1},
-    #         {"sku": "1218CF05F3", "quantity": 1}
-    #     ],
-    #     "purchase_order_number": "test!123test"
-    # }
-    # '''
-    input_csv = input("Enter the CSV path: ")
-    
-    # Transform CSV to JSON payload
-    json_payload = csv_to_json_payload(input_csv)
-
-    # Run the automation
+    json_payload = '''
+    {
+        "order": [
+            {"sku": "912PR243F172", "quantity": 2},
+            {"sku": "912PR101F172", "quantity": 1},
+            {"sku": "1212FVRPWAS", "quantity": 1},
+            {"sku": "1218CF04F3", "quantity": 1},
+            {"sku": "1218CF05F3", "quantity": 1}
+        ],
+        "purchase_order_number": "test!123test"
+    }
+    '''
     return_response = main(json_payload)
     print(json.dumps(return_response, indent=2))

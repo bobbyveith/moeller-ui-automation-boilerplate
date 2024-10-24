@@ -18,12 +18,12 @@ class OrderItem:
     url: Optional[str] = None
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], product_data: Dict[str, Dict[str, str]], create_url_func):
+    def from_dict(cls, data: Dict[str, Any], product_data: pd.DataFrame, create_url_func):
         """
         Create the order item object from the product data and the json data
 
         :param data: The json data to create the order item object from
-        :param product_data: The product data to create the order item object from
+        :param product_data: The dataframe to create the order item object from
         :param create_url_func: The function to create the url for the order item
         :return: The order item object
         """
@@ -45,7 +45,7 @@ class OrderItem:
                 url=url
             )
         else:
-            return cls(sku=sku, quantity=quantity)
+            return None
 
 
 @dataclass
@@ -78,11 +78,17 @@ class Payload:
         :return: The payload object
         """
         data = json.loads(json_data)
-        order_items = [
-            OrderItem.from_dict(item, product_data, create_url_func)
-            for item in data['order']
-        ]
-        return cls(order=order_items)
+        order_items = []
+        errors = {}
+        for item in data['order']:
+            order_item = OrderItem.from_dict(item, product_data, create_url_func)
+            if order_item:
+                order_items.append(order_item)
+            else:
+                errors[item['sku']] = "SKU not found in product data"
+
+        payload = cls(order=order_items)
+        return payload, errors
 
     def group_by_size(self) -> List[OrderGroup]:
         """
