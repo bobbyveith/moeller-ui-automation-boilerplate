@@ -92,9 +92,11 @@ class Payload:
         """
         size_groups: Dict[str, OrderGroup] = {}
         for item in self.order:
-            if item.size not in size_groups:
-                size_groups[item.size] = OrderGroup(size_group=item.size)
-            size_groups[item.size].add_item(item)
+            # Convert item.size to a string to ensure it's hashable
+            item_size = str(item.size)  # or item.size.item() if it's a single-element Series
+            if item_size not in size_groups:
+                size_groups[item_size] = OrderGroup(size_group=item_size)
+            size_groups[item_size].add_item(item)
         return list(size_groups.values())
 
 
