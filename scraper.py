@@ -25,7 +25,8 @@ import pyfiglet
 import logging
 import traceback
 import json
-
+import csv
+from config import TEST_MODE
 # Setup logging and load environment variables
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -102,19 +103,52 @@ def main(json_payload: str):
             "errors": automation_response.get("errors", {})
         }
 
+def csv_to_json_payload(csv_path: str) -> str:
+    """
+    Convert a CSV file to a JSON payload string.
+
+    :param csv_path: The path to the CSV file.
+    :return: A JSON payload string.
+    """
+    try:
+        with open(csv_path, mode='r', newline='') as csvfile:
+            csv_reader = csv.reader(csvfile)
+            order = [{"sku": row[0], "quantity": int(row[1])} for row in csv_reader]
+
+        # Extract the purchase order number from the file name
+        purchase_order_number = os.path.splitext(os.path.basename(csv_path))[0]
+
+        # Create the JSON payload
+        json_payload = {
+            "order": order,
+            "purchase_order_number": purchase_order_number
+        }
+
+        return json.dumps(json_payload)
+    except Exception as e:
+        logging.error(f"An error occurred while converting CSV to JSON payload: {e}")
+        return None
 
 if __name__ == "__main__":
-    json_payload = '''
-    {
-        "order": [
-            {"sku": "912PR243F172", "quantity": 2},
-            {"sku": "912PR101F172", "quantity": 1},
-            {"sku": "1212FVRPWAS", "quantity": 1},
-            {"sku": "1218CF04F3", "quantity": 1},
-            {"sku": "1218CF05F3", "quantity": 1}
-        ],
-        "purchase_order_number": "test!123test"
-    }
-    '''
+    # json_payload = '''
+    # {
+    #     "order": [
+    #         {"sku": "912PR243F172", "quantity": 2},
+    #         {"sku": "912PR101F172", "quantity": 1},
+    #         {"sku": "1212FVRPWAS", "quantity": 1},
+    #         {"sku": "1218CF04F3", "quantity": 1},
+    #         {"sku": "1218CF05F3", "quantity": 1}
+    #     ],
+    #     "purchase_order_number": "test!123test"
+    # }
+    # '''
+    csv_path = input("Enter the path to the CSV file: ")
+    json_payload = csv_to_json_payload(csv_path)
+
     return_response = main(json_payload)
+    if TEST_MODE:
+        print("============ TEST MODE =============")
     print(json.dumps(return_response, indent=2))
+
+#TODO: Add function to save skus that are not in product data to a local file
+#TODO: Add patch to detect product page with no item on it and skip it

@@ -370,17 +370,17 @@ class WebAutomation:
                     self.clear_cart()
                     self.process_order_group(order_group)
 
-                    retry_count = 0
-                    while retry_count < 3:
-                        missing_or_incorrect_items = self.check_cart_items(order_group)
-                        if not missing_or_incorrect_items:
-                            break
-                        self.retry_add_to_cart(missing_or_incorrect_items)
-                        retry_count += 1
+                    # retry_count = 0
+                    # while retry_count < 3:
+                    #     missing_or_incorrect_items = self.check_cart_items(order_group)
+                    #     if not missing_or_incorrect_items:
+                    #         break
+                    #     self.retry_add_to_cart(missing_or_incorrect_items)
+                    #     retry_count += 1
 
-                    if missing_or_incorrect_items:
-                        for item in missing_or_incorrect_items:
-                            self.automation_response["sizes"][order_group.size_group]["errors"][item.sku] = "Failed to add to cart or incorrect quantity"
+                    # if missing_or_incorrect_items:
+                    #     for item in missing_or_incorrect_items:
+                    #         self.automation_response["sizes"][order_group.size_group]["errors"][item.sku] = "Failed to add to cart or incorrect quantity"
 
                     pdf_file_path, order_confirmation_number = self.checkout()
                     if order_confirmation_number and pdf_file_path:
