@@ -370,6 +370,8 @@ class WebAutomation:
                     self.clear_cart()
                     self.process_order_group(order_group)
 
+                    print(f"Problematic SKUs: {[sku for size in self.automation_response['sizes'].values() for sku, error in size.get('errors', {}).items() if sku != 'group_error']}")
+                    raise SystemExit("End Test")
                     # retry_count = 0
                     # while retry_count < 3:
                     #     missing_or_incorrect_items = self.check_cart_items(order_group)

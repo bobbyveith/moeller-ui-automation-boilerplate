@@ -117,7 +117,7 @@ def csv_to_json_payload(csv_path: str) -> str:
 
         # Extract the purchase order number from the file name
         purchase_order_number = os.path.splitext(os.path.basename(csv_path))[0]
-
+        
         # Create the JSON payload
         json_payload = {
             "order": order,
@@ -144,6 +144,12 @@ if __name__ == "__main__":
     # '''
     csv_path = input("Enter the path to the CSV file: ")
     json_payload = csv_to_json_payload(csv_path)
+
+    if json_payload:
+        payload_data = json.loads(json_payload)
+        print(f"Number of orders in payload: {len(payload_data['order'])}")
+    else:
+        raise SystemExit("End Test")
 
     return_response = main(json_payload)
     if TEST_MODE:
