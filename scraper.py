@@ -81,7 +81,7 @@ def main(json_payload: str):
                 for item in order_data:
                     if item['sku'].lower() == sku_lower:
                         print(f"SKU: {sku} | Quantity: {item['quantity']} | Error: {error}")
-                        break
+                        errors[sku] = {'Error': "SKU not found in product data", 'Quantity': item['quantity']}
 
         # Create order groups
         order_groups = create_order_groups(payload)
