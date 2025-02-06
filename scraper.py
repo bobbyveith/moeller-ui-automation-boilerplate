@@ -71,6 +71,18 @@ def main(json_payload: str):
         # Create Payload object from JSON
         payload, errors = Payload.from_json(json_payload, product_data, create_url)
 
+        # If there are errors, print SKUs and their quantities
+        if errors:
+            print("\nThe following SKUs were not found in product data:")
+            order_data = json.loads(json_payload)['order']
+            for sku, error in errors.items():
+                # Find the quantity for this SKU in the original order
+                sku_lower = sku.lower()
+                for item in order_data:
+                    if item['sku'].lower() == sku_lower:
+                        print(f"SKU: {sku} | Quantity: {item['quantity']} | Error: {error}")
+                        break
+
         # Create order groups
         order_groups = create_order_groups(payload)
 
