@@ -63,7 +63,7 @@ class WebAutomation:
                 "safebrowsing.enabled": False
             }
             chrome_options.add_experimental_option('prefs', prefs)
-            chrome_options.add_argument("--headless=new") # Comment this out if you want to see the browser
+            #chrome_options.add_argument("--headless=new") # Comment this out if you want to see the browser
             chrome_options.add_argument("--kiosk")
             chrome_options.add_argument("--kiosk-printing")
             chrome_options.add_argument("--no-sandbox")

@@ -35,14 +35,14 @@ def get_product_info(product_sku: str, product_data: Dict[str, Dict[str, str]]):
         return None, None, None, None, None, None, None, None  # Return None values if SKU not found
 
 
-def create_url(product_sku):
-    product_data = load_product_data()
-    if product_sku in product_data.index:
-        product_info = product_data.loc[product_sku]
-        catalog_id = product_info['catalog_id']
-        list_id = product_info['list_id']
-        item_id = product_info['item_id']
-        url = f"https://www.myorderdesk.com/FormV2.asp?Provider_ID=1325030&OrderFormID=534080&CatalogID={catalog_id}&INVSYN={list_id}|{item_id}"
-        return url
-    else:
-        return None
+def create_url(catalog_id: str, list_id: str, item_id: str) -> str:
+    """
+    Create the URL using the already retrieved product data
+    
+    :param catalog_id: The catalog ID from the product data
+    :param list_id: The list ID from the product data
+    :param item_id: The item ID from the product data
+    :return: The formatted URL string
+    """
+    base_url = "https://www.myorderdesk.com/FormV2.asp"
+    return f"{base_url}?Provider_ID=1325030&OrderFormID=534080&CatalogID={catalog_id}&INVSYN={list_id}|{item_id}"

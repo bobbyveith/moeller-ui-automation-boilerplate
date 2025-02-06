@@ -31,17 +31,28 @@ class OrderItem:
         quantity = data['quantity']
         if sku in product_data.index:
             item_data = product_data.loc[sku]
-            url = create_url_func(sku)
+            
+            # If we have multiple rows, select the one with longer shop_id
+            if isinstance(item_data, pd.DataFrame) or isinstance(item_data['shop_id'], pd.Series):
+                item_data = item_data.iloc[sorted(range(len(item_data)), 
+                                                key=lambda i: len(str(item_data['shop_id'].iloc[i])), 
+                                                reverse=True)[0]]
+            
+            catalog_id = str(item_data['catalog_id'])
+            list_id = str(item_data['list_id'])
+            item_id = str(item_data['item_id'])
+            url = create_url_func(catalog_id, list_id, item_id)
+            
             return cls(
                 sku=sku,
                 quantity=quantity,
-                catalog_id=item_data['catalog_id'],
-                list_id=item_data['list_id'],
-                item_id=item_data['item_id'],
-                product_name=item_data['product_name'],
-                shop_id=item_data['shop_id'],
-                mis_itm_is=item_data['mis_item_id'],
-                size=item_data['size'],
+                catalog_id=catalog_id,
+                list_id=list_id,
+                item_id=item_id,
+                product_name=str(item_data['product_name']),
+                shop_id=str(item_data['shop_id']),
+                mis_itm_is=str(item_data['mis_item_id']),
+                size=str(item_data['size']),
                 url=url
             )
         else:
@@ -104,7 +115,6 @@ class Payload:
                 size_groups[item_size] = OrderGroup(size_group=item_size)
             size_groups[item_size].add_item(item)
         return list(size_groups.values())
-
 
 # Example usage:
 if __name__ == "__main__":
