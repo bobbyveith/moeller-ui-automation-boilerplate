@@ -93,7 +93,7 @@ class WebAutomation:
             self.logger.info("[+] Login submitted.")
 
             WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, '//*[@id="catalogMain"]/section/article/a/h3'))
+                EC.presence_of_element_located((By.XPATH, '//*[@id="catalogMain"]')) # '//*[@id="catalogMain"]/section/article/a/h3' --> old XPATH 
             )
             self.logger.info("[+] Login successful.")
         except (NoSuchElementException, TimeoutException) as e:
