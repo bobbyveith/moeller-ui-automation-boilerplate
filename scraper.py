@@ -169,4 +169,9 @@ if __name__ == "__main__":
     print(json.dumps(return_response, indent=2))
 
 #TODO: Add function to save skus that are not in product data to a local file
-#TODO: Add patch to detect product page with no item on it and skip it
+#TODO: create a function to recieve json payload and return the automation response
+#TODO: migrate code to the flask app
+#TODO: create logic to finish purchasing when there are no erros, but stop when there are errors
+#TODO: create function to take in raw product data from moeller and transform to our internal product data
+#TODO: create db table for moeller product data
+#TODO: create db table for moeller url id numbers
