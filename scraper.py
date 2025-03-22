@@ -176,3 +176,4 @@ if __name__ == "__main__":
 #TODO: create db table for moeller product data
 #TODO: create db table for moeller url id numbers
 #TODO: make it possible to upload csv files to the server and run the automation on them
+#TODO: think about how to give feedback to the user about the status of the automation
